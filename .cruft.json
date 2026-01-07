@@ -1,0 +1,29 @@
+{
+  "template": "https://github.com/FAIRmat-NFDI/cookiecutter-nomad-plugin",
+  "commit": "7bfd556fe5c57f6ad5666fe65eed2cf3672f5719",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "full_name": "Hussain Arif",
+      "email": "h.arif@zbt.de",
+      "github_username": "HussainArif12",
+      "plugin_name": "nomad_tdms_plugin",
+      "module_name": "nomad_tdms_plugin",
+      "short_description": "Run TDMS files",
+      "version": "0.0.1",
+      "license": "MIT",
+      "include_schema_package": true,
+      "include_normalizer": true,
+      "include_parser": true,
+      "include_app": true,
+      "include_example_uploads": true,
+      "include_action": true,
+      "_copy_without_render": [
+        "*.html"
+      ],
+      "_template": "https://github.com/FAIRmat-NFDI/cookiecutter-nomad-plugin",
+      "_commit": "7bfd556fe5c57f6ad5666fe65eed2cf3672f5719"
+    }
+  },
+  "directory": null
+}
