@@ -30,5 +30,5 @@ class NewParser(MatchingParser):
     ) -> None:
         logger.info('NewParser.parse', parameter=configuration.parameter)
         print(TdmsFile.read(mainfile))
-        logger.info('NewSchema.parse', f"TdmsFile.read(mainfile)")
+        logger.info('NewSchema.parse', f"{TdmsFile.read(mainfile)}")
         archive.workflow2 = Workflow(name='test')
