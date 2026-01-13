@@ -308,7 +308,15 @@ def filter_cycle(files, cycle_df, file_ranges=None):
 
 
 def save_cycle(
-    context, cycle_data, typ, temp, zustand, zyklus_nr, cycle_df, unvollstaendig=False
+    context,
+    archive,
+    cycle_data,
+    typ,
+    temp,
+    zustand,
+    zyklus_nr,
+    cycle_df,
+    unvollstaendig=False,
 ):
     datum_str = cycle_df["time"].min().strftime("%Y-%m-%d")
     filename = f"{BASENAME}-{typ}_{temp}_{zustand}_{datum_str}_Zyklus{zyklus_nr}"
@@ -325,6 +333,7 @@ def save_cycle(
         cycle_data,
         entry_dict={},
         context=context,
+        archive=archive,
         filename=filename,
         file_type="tdms",
         logger=print,

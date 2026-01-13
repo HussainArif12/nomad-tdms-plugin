@@ -66,6 +66,7 @@ def create_archive(
     cycle_data,
     entry_dict,
     context,
+    archive,
     filename,
     file_type,
     logger,
@@ -77,56 +78,44 @@ def create_archive(
     dicts_are_equal = None
     if isinstance(context, ClientContext):
         return None
-    if file_exists:
-        with context.raw_file(filename, "r") as file:
-            # existing_dict = yaml.safe_load(file)
-            # dicts_are_equal = dict_nan_equal(existing_dict, entry_dict)
-            pass
+
     if not file_exists or overwrite or dicts_are_equal:
-        with context.raw_file(filename, "w") as newfile:
-            if file_type == "json":
-                json.dump(entry_dict, newfile)
-            elif file_type == "yaml":
-                yaml.dump(entry_dict, newfile)
-            else:
-                with TdmsWriter(filename) as tdms_writer:
-                    root = RootObject(
-                        properties={
-                            "Zyklus": int(zyklus_nr),
-                            "Typ": str(typ),
-                            "Temp": str(temp),
-                            "Zustand": str(zustand),
-                            "Datum": datum_str,
-                        }
-                    )
-                    all_objects = [root]
-                    min_time, max_time, total_points = None, None, 0
-                    for gname, group in cycle_data.items():
-                        gobj = GroupObject(gname)  # properties=None
-                        all_objects.append(gobj)
+        with archive.m_context.raw_file(filename, "wb") as file:
+            with TdmsWriter(file.name) as tdms_writer:
+                root = RootObject(
+                    properties={
+                        "Zyklus": int(zyklus_nr),
+                        "Typ": str(typ),
+                        "Temp": str(temp),
+                        "Zustand": str(zustand),
+                        "Datum": datum_str,
+                    }
+                )
+                all_objects = [root]
+                min_time, max_time, total_points = None, None, 0
+                for gname, group in cycle_data.items():
+                    gobj = GroupObject(gname)  # properties=None
+                    all_objects.append(gobj)
 
-                        for cname, df in group.items():
-                            if df.empty:
-                                continue
+                    for cname, df in group.items():
+                        if df.empty:
+                            continue
 
-                            # globale Dauer und Punkte zählen
-                            tmin, tmax = df["time"].min(), df["time"].max()
-                            if min_time is None or tmin < min_time:
-                                min_time = tmin
-                            if max_time is None or tmax > max_time:
-                                max_time = tmax
-                            total_points += len(df)
+                        # globale Dauer und Punkte zählen
+                        tmin, tmax = df["time"].min(), df["time"].max()
+                        if min_time is None or tmin < min_time:
+                            min_time = tmin
+                        if max_time is None or tmax > max_time:
+                            max_time = tmax
+                        total_points += len(df)
 
-                            values = df["value"].values
-                            ts = df["time"].astype("datetime64[ns]").values
-                            ch_val = ChannelObject(
-                                gname, f"{cname}.Current Value", values
-                            )
-                            ch_ts = ChannelObject(gname, f"{cname}.Timestamp", ts)
-                            all_objects.extend([ch_val, ch_ts])
+                        values = df["value"].values
+                        ts = df["time"].astype("datetime64[ns]").values
+                        ch_val = ChannelObject(gname, f"{cname}.Current Value", values)
+                        ch_ts = ChannelObject(gname, f"{cname}.Timestamp", ts)
+                        all_objects.extend([ch_val, ch_ts])
 
-                    print("I am here")
-                    tdms_writer.write_segment(all_objects)
+                tdms_writer.write_segment(all_objects)
 
         context.upload.process_updated_raw_file(filename, allow_modify=True)
 
