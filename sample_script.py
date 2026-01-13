@@ -6,8 +6,10 @@ import inspect
 
 # === PARAMETER ===
 INPUT_FILE = r"C:\Users\r.scheich\Documents\Frozen\Auswertung\Daten\Datenverarbeitung\example.tdms"  # Point to a single TDMS file
-OUTPUT_FOLDER = r"W:\Projekte\62204_BMBF_FROZEN\05-Technik\Prüfstand BZ026\gefilterte Daten"
-PRUEFLINGSNAME = "636"          # manuell setzen
+OUTPUT_FOLDER = (
+    r"W:\Projekte\62204_BMBF_FROZEN\05-Technik\Prüfstand BZ026\gefilterte Daten"
+)
+PRUEFLINGSNAME = "636"  # manuell setzen
 BASENAME = f"NVM5evo-{PRUEFLINGSNAME}-11"
 
 # Ausnahmen bleiben voll erhalten
@@ -24,16 +26,66 @@ INDEX_MAPPING = {
 }
 
 REQUIRED_INDICES = {
-    99, 100, 102, 103, 104,
-    201, 202,
-    211, 212, 213, 214, 215, 216, 217, 218, 219, 220,
-    221, 222, 223, 224, 225, 226, 227, 228, 229, 230,
-    231, 232, 240, 241,
-    250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260,
-    299, 300,
-    501, 502, 503, 600, 601,
-    700, 701, 702, 703, 704, 705, 706, 709,
-    710, 800, 900
+    99,
+    100,
+    102,
+    103,
+    104,
+    201,
+    202,
+    211,
+    212,
+    213,
+    214,
+    215,
+    216,
+    217,
+    218,
+    219,
+    220,
+    221,
+    222,
+    223,
+    224,
+    225,
+    226,
+    227,
+    228,
+    229,
+    230,
+    231,
+    232,
+    240,
+    241,
+    250,
+    251,
+    252,
+    253,
+    254,
+    255,
+    256,
+    257,
+    258,
+    259,
+    260,
+    299,
+    300,
+    501,
+    502,
+    503,
+    600,
+    601,
+    700,
+    701,
+    702,
+    703,
+    704,
+    705,
+    706,
+    709,
+    710,
+    800,
+    900,
 }
 
 GO_SIG = inspect.signature(GroupObject)
@@ -41,12 +93,14 @@ print("👉 GroupObject signature:", GO_SIG)
 
 # ========== Utilities ==========
 
+
 def timed(label, fn, *args, **kwargs):
     t0 = time.perf_counter()
     out = fn(*args, **kwargs)
     dt = time.perf_counter() - t0
     print(f"[{label}] {dt:0.2f}s")
     return out
+
 
 def merge_intervals(intervals):
     if not intervals:
@@ -60,6 +114,7 @@ def merge_intervals(intervals):
             merged.append((s, e))
     return merged
 
+
 def load_tdms_file(file_path):
     """Load a single TDMS file and return it as a list for compatibility with rest of code."""
     if not os.path.exists(file_path):
@@ -68,14 +123,17 @@ def load_tdms_file(file_path):
         raise ValueError(f"File must be a .tdms file: {file_path}")
     return [file_path]
 
+
 def get_file_timerange(path):
     try:
         tdms = TdmsFile.read(path)
         group = tdms["PROCESSIMAGE"]
     except Exception as e:
         # Im Zweifel Datei nicht ausschließen
-        print(f"   [WARN] Datei nicht lesbar für Timerange ({os.path.basename(path)}): {e}")
-        return (pd.Timestamp(1900,1,1), pd.Timestamp(2100,1,1))
+        print(
+            f"   [WARN] Datei nicht lesbar für Timerange ({os.path.basename(path)}): {e}"
+        )
+        return (pd.Timestamp(1900, 1, 1), pd.Timestamp(2100, 1, 1))
 
     # 1) Bevorzugt: Index-Timestamps
     try:
@@ -100,7 +158,8 @@ def get_file_timerange(path):
         return (min(tmins), max(tmaxs))
 
     # 3) Harte Fallbacks – lieber nicht ausschließen
-    return (pd.Timestamp(1900,1,1), pd.Timestamp(2100,1,1))
+    return (pd.Timestamp(1900, 1, 1), pd.Timestamp(2100, 1, 1))
+
 
 def extract_index_series_all(files):
     all_dfs = []
@@ -110,7 +169,7 @@ def extract_index_series_all(files):
             tdms = TdmsFile.read(f)
             group = tdms["PROCESSIMAGE"]
             vals = group["BZ26.SET.Active Index.Current Value"].data
-            ts   = pd.to_datetime(group["BZ26.SET.Active Index.Timestamp"].data)
+            ts = pd.to_datetime(group["BZ26.SET.Active Index.Timestamp"].data)
             df = pd.DataFrame({"index": vals, "time": ts})
             all_dfs.append(df)
         except KeyError:
@@ -121,6 +180,7 @@ def extract_index_series_all(files):
     if skipped:
         print(f"   [INFO] {skipped} Datei(en) ohne Indexkanal übersprungen.")
     return pd.concat(all_dfs).sort_values("time").reset_index(drop=True)
+
 
 def detect_cycles(index_df):
     cycles = []
@@ -158,12 +218,13 @@ def detect_cycles(index_df):
 
     return cycles
 
+
 def build_channel_pairs(group):
     channels = {ch.name: ch for ch in group.channels()}
     pairs = {}
     for name in channels:
         if name.endswith(".Current Value"):
-            base = name[:-len(".Current Value")]
+            base = name[: -len(".Current Value")]
             ts_name = base + ".Timestamp"
             if ts_name in channels:
                 values = channels[name].data
@@ -171,13 +232,14 @@ def build_channel_pairs(group):
                 pairs[base] = (values, timestamps)
     return pairs
 
+
 # ========== Kern: Filtern auf Basis von Dateien + Zeitfenstern ==========
 def filter_cycle(files, cycle_df, file_ranges=None):
     cycle_df = cycle_df[cycle_df["index"] != 1]
     print("   ↳ Berechne Intervalle...")
 
     indices = cycle_df["index"].values
-    times   = pd.to_datetime(cycle_df["time"].values)
+    times = pd.to_datetime(cycle_df["time"].values)
 
     keep_intervals = []
     last_idx = indices[0]
@@ -216,7 +278,10 @@ def filter_cycle(files, cycle_df, file_ranges=None):
     # --- nur relevante Dateien öffnen ---
     cycle_data = {}
     for f in files:
-        if file_ranges and (file_ranges[f][1] < keep_intervals[0][0] or file_ranges[f][0] > keep_intervals[-1][1]):
+        if file_ranges and (
+            file_ranges[f][1] < keep_intervals[0][0]
+            or file_ranges[f][0] > keep_intervals[-1][1]
+        ):
             continue
         tdms = TdmsFile.read(f)
         for group in tdms.groups():
@@ -244,9 +309,13 @@ def filter_cycle(files, cycle_df, file_ranges=None):
     print("   ✔ Filtercycle abgeschlossen")
     return cycle_data
 
+
 # ========== Speichern ==========
 
-def save_cycle(cycle_data, typ, temp, zustand, zyklus_nr, cycle_df, unvollstaendig=False):
+
+def save_cycle(
+    cycle_data, typ, temp, zustand, zyklus_nr, cycle_df, unvollstaendig=False
+):
     datum_str = cycle_df["time"].min().strftime("%Y-%m-%d")
     filename = f"{BASENAME}-{typ}_{temp}_{zustand}_{datum_str}_Zyklus{zyklus_nr}"
     if unvollstaendig:
@@ -255,13 +324,15 @@ def save_cycle(cycle_data, typ, temp, zustand, zyklus_nr, cycle_df, unvollstaend
     path = os.path.join(OUTPUT_FOLDER, filename)
 
     with TdmsWriter(path) as writer:
-        root = RootObject(properties={
-            "Zyklus": int(zyklus_nr),
-            "Typ": str(typ),
-            "Temp": str(temp),
-            "Zustand": str(zustand),
-            "Datum": datum_str
-        })
+        root = RootObject(
+            properties={
+                "Zyklus": int(zyklus_nr),
+                "Typ": str(typ),
+                "Temp": str(temp),
+                "Zustand": str(zustand),
+                "Datum": datum_str,
+            }
+        )
 
         all_objects = [root]
         min_time, max_time, total_points = None, None, 0
@@ -285,7 +356,7 @@ def save_cycle(cycle_data, typ, temp, zustand, zyklus_nr, cycle_df, unvollstaend
                 values = df["value"].values
                 ts = df["time"].astype("datetime64[ns]").values
                 ch_val = ChannelObject(gname, f"{cname}.Current Value", values)
-                ch_ts  = ChannelObject(gname, f"{cname}.Timestamp", ts)
+                ch_ts = ChannelObject(gname, f"{cname}.Timestamp", ts)
                 all_objects.extend([ch_val, ch_ts])
 
         writer.write_segment(all_objects)
@@ -296,7 +367,9 @@ def save_cycle(cycle_data, typ, temp, zustand, zyklus_nr, cycle_df, unvollstaend
 
     print(f"✔ Datei gespeichert: {path}")
 
+
 # ========== MAIN ==========
+
 
 def main():
     files = load_tdms_file(INPUT_FILE)
@@ -330,13 +403,21 @@ def main():
         cycle_data = timed(f"Filter Zyklus {i}", filter_cycle, files, c, file_ranges)
         timed(
             f"Speichern Zyklus {i}",
-            save_cycle, cycle_data, typ, temp, zustand, zyklus_counter[key], c, unvollst
+            save_cycle,
+            cycle_data,
+            typ,
+            temp,
+            zustand,
+            zyklus_counter[key],
+            c,
+            unvollst,
         )
 
         elapsed = time.perf_counter() - t_start
         print(f"   ✔ Zyklus {i} fertig | bisher {elapsed:.1f}s")
 
     print(f"\n✔ Gesamt fertig in {time.perf_counter() - t_start:.1f}s")
+
 
 if __name__ == "__main__":
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)

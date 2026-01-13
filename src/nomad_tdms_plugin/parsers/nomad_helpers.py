@@ -73,6 +73,7 @@ def create_archive(
     overwrite: bool = False,
 ):
     file_exists = context.raw_path_exists(filename)
+
     dicts_are_equal = None
     if isinstance(context, ClientContext):
         return None
@@ -88,7 +89,7 @@ def create_archive(
             elif file_type == "yaml":
                 yaml.dump(entry_dict, newfile)
             else:
-                with TdmsWriter(newfile) as tdms_writer:
+                with TdmsWriter(filename) as tdms_writer:
                     root = RootObject(
                         properties={
                             "Zyklus": int(zyklus_nr),
@@ -124,6 +125,7 @@ def create_archive(
                             ch_ts = ChannelObject(gname, f"{cname}.Timestamp", ts)
                             all_objects.extend([ch_val, ch_ts])
 
+                    print("I am here")
                     tdms_writer.write_segment(all_objects)
 
         context.upload.process_updated_raw_file(filename, allow_modify=True)

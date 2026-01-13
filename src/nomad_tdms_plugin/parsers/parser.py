@@ -54,10 +54,10 @@ class NewParser(MatchingParser):
         archive.metadata.entry_id = "tdms_dataset"
         archive.data = NewSchemaPackage()
         upload_id = archive.m_context.upload_id if archive.m_context else "tdms_upload"
-        StagingUploadFiles(
-            upload_id=upload_id,
-            create=True,
-        )
+        # StagingUploadFiles(
+        #     upload_id=upload_id,
+        #     create=True,
+        # )
 
         print("here")
         tdms_file_paths = load_tdms_file(mainfile)
