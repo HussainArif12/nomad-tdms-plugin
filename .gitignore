@@ -128,3 +128,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+*.tdms
+tests/example_uploads/PROCESS_DATA_STORAGE_2026-01-07_05-38-07.tdms

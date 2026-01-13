@@ -2,10 +2,10 @@ import os
 import pandas as pd
 from nptdms import TdmsFile, TdmsWriter, ChannelObject, RootObject, GroupObject
 import time
+from .nomad_helpers import create_archive
 
-
-OUTPUT_FOLDER = r"W:\Projekte\62204_BMBF_FROZEN\05-Technik\Prüfstand BZ026\gefilterte Daten"
-PRUEFLINGSNAME = "636"          # manuell setzen
+OUTPUT_FOLDER = r"./outputs"
+PRUEFLINGSNAME = "636"  # manuell setzen
 BASENAME = f"NVM5evo-{PRUEFLINGSNAME}-11"
 
 # Ausnahmen bleiben voll erhalten
@@ -22,20 +22,71 @@ INDEX_MAPPING = {
 }
 
 REQUIRED_INDICES = {
-    99, 100, 102, 103, 104,
-    201, 202,
-    211, 212, 213, 214, 215, 216, 217, 218, 219, 220,
-    221, 222, 223, 224, 225, 226, 227, 228, 229, 230,
-    231, 232, 240, 241,
-    250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260,
-    299, 300,
-    501, 502, 503, 600, 601,
-    700, 701, 702, 703, 704, 705, 706, 709,
-    710, 800, 900
+    99,
+    100,
+    102,
+    103,
+    104,
+    201,
+    202,
+    211,
+    212,
+    213,
+    214,
+    215,
+    216,
+    217,
+    218,
+    219,
+    220,
+    221,
+    222,
+    223,
+    224,
+    225,
+    226,
+    227,
+    228,
+    229,
+    230,
+    231,
+    232,
+    240,
+    241,
+    250,
+    251,
+    252,
+    253,
+    254,
+    255,
+    256,
+    257,
+    258,
+    259,
+    260,
+    299,
+    300,
+    501,
+    502,
+    503,
+    600,
+    601,
+    700,
+    701,
+    702,
+    703,
+    704,
+    705,
+    706,
+    709,
+    710,
+    800,
+    900,
 }
 
 
 # ========== Utilities ==========
+
 
 def timed(label, fn, logger, *args, **kwargs):
     t0 = time.perf_counter()
@@ -43,6 +94,7 @@ def timed(label, fn, logger, *args, **kwargs):
     dt = time.perf_counter() - t0
     logger.info("NewSchema.parse", parameter=f"[{label}] {dt:0.2f}s")
     return out
+
 
 def merge_intervals(intervals):
     if not intervals:
@@ -56,6 +108,7 @@ def merge_intervals(intervals):
             merged.append((s, e))
     return merged
 
+
 def load_tdms_file(file_path):
     """Load a single TDMS file and return it as a list for compatibility with rest of code."""
     if not os.path.exists(file_path):
@@ -64,14 +117,17 @@ def load_tdms_file(file_path):
         raise ValueError(f"File must be a .tdms file: {file_path}")
     return [file_path]
 
+
 def get_file_timerange(path):
     try:
         tdms = TdmsFile.read(path)
         group = tdms["PROCESSIMAGE"]
     except Exception as e:
         # Im Zweifel Datei nicht ausschließen
-        print(f"   [WARN] Datei nicht lesbar für Timerange ({os.path.basename(path)}): {e}")
-        return (pd.Timestamp(1900,1,1), pd.Timestamp(2100,1,1))
+        print(
+            f"   [WARN] Datei nicht lesbar für Timerange ({os.path.basename(path)}): {e}"
+        )
+        return (pd.Timestamp(1900, 1, 1), pd.Timestamp(2100, 1, 1))
 
     # 1) Bevorzugt: Index-Timestamps
     try:
@@ -96,7 +152,8 @@ def get_file_timerange(path):
         return (min(tmins), max(tmaxs))
 
     # 3) Harte Fallbacks – lieber nicht ausschließen
-    return (pd.Timestamp(1900,1,1), pd.Timestamp(2100,1,1))
+    return (pd.Timestamp(1900, 1, 1), pd.Timestamp(2100, 1, 1))
+
 
 def extract_index_series_all(files):
     all_dfs = []
@@ -106,7 +163,7 @@ def extract_index_series_all(files):
             tdms = TdmsFile.read(f)
             group = tdms["PROCESSIMAGE"]
             vals = group["BZ26.SET.Active Index.Current Value"].data
-            ts   = pd.to_datetime(group["BZ26.SET.Active Index.Timestamp"].data)
+            ts = pd.to_datetime(group["BZ26.SET.Active Index.Timestamp"].data)
             df = pd.DataFrame({"index": vals, "time": ts})
             all_dfs.append(df)
         except KeyError:
@@ -117,6 +174,7 @@ def extract_index_series_all(files):
     if skipped:
         print(f"   [INFO] {skipped} Datei(en) ohne Indexkanal übersprungen.")
     return pd.concat(all_dfs).sort_values("time").reset_index(drop=True)
+
 
 def detect_cycles(index_df):
     cycles = []
@@ -154,12 +212,13 @@ def detect_cycles(index_df):
 
     return cycles
 
+
 def build_channel_pairs(group):
     channels = {ch.name: ch for ch in group.channels()}
     pairs = {}
     for name in channels:
         if name.endswith(".Current Value"):
-            base = name[:-len(".Current Value")]
+            base = name[: -len(".Current Value")]
             ts_name = base + ".Timestamp"
             if ts_name in channels:
                 values = channels[name].data
@@ -167,13 +226,14 @@ def build_channel_pairs(group):
                 pairs[base] = (values, timestamps)
     return pairs
 
+
 # ========== Kern: Filtern auf Basis von Dateien + Zeitfenstern ==========
 def filter_cycle(files, cycle_df, file_ranges=None):
     cycle_df = cycle_df[cycle_df["index"] != 1]
     print("   ↳ Berechne Intervalle...")
 
     indices = cycle_df["index"].values
-    times   = pd.to_datetime(cycle_df["time"].values)
+    times = pd.to_datetime(cycle_df["time"].values)
 
     keep_intervals = []
     last_idx = indices[0]
@@ -212,7 +272,10 @@ def filter_cycle(files, cycle_df, file_ranges=None):
     # --- nur relevante Dateien öffnen ---
     cycle_data = {}
     for f in files:
-        if file_ranges and (file_ranges[f][1] < keep_intervals[0][0] or file_ranges[f][0] > keep_intervals[-1][1]):
+        if file_ranges and (
+            file_ranges[f][1] < keep_intervals[0][0]
+            or file_ranges[f][0] > keep_intervals[-1][1]
+        ):
             continue
         tdms = TdmsFile.read(f)
         for group in tdms.groups():
@@ -240,54 +303,67 @@ def filter_cycle(files, cycle_df, file_ranges=None):
     print("   ✔ Filtercycle abgeschlossen")
     return cycle_data
 
+
 # ========== Speichern ==========
 
-def save_cycle(cycle_data, typ, temp, zustand, zyklus_nr, cycle_df, unvollstaendig=False):
+
+def save_cycle(
+    context, cycle_data, typ, temp, zustand, zyklus_nr, cycle_df, unvollstaendig=False
+):
     datum_str = cycle_df["time"].min().strftime("%Y-%m-%d")
     filename = f"{BASENAME}-{typ}_{temp}_{zustand}_{datum_str}_Zyklus{zyklus_nr}"
     if unvollstaendig:
         filename += "_unvollständig"
     filename += ".tdms"
     path = os.path.join(OUTPUT_FOLDER, filename)
+    create_archive(
+        zyklus_nr,
+        typ,
+        temp,
+        zustand,
+        datum_str,
+        cycle_data,
+        entry_dict={},
+        context=context,
+        filename=filename,
+        file_type="tdms",
+        logger=print,
+        overwrite=True,
+    )
+    # with TdmsWriter(path) as writer:
+    #     root = RootObject(properties={
+    #         "Zyklus": int(zyklus_nr),
+    #         "Typ": str(typ),
+    #         "Temp": str(temp),
+    #         "Zustand": str(zustand),
+    #         "Datum": datum_str
+    #     })
 
-    with TdmsWriter(path) as writer:
-        root = RootObject(properties={
-            "Zyklus": int(zyklus_nr),
-            "Typ": str(typ),
-            "Temp": str(temp),
-            "Zustand": str(zustand),
-            "Datum": datum_str
-        })
+    #     all_objects = [root]
+    #     min_time, max_time, total_points = None, None, 0
 
-        all_objects = [root]
-        min_time, max_time, total_points = None, None, 0
+    #     for gname, group in cycle_data.items():
+    #         gobj = GroupObject(gname)  # properties=None
+    #         all_objects.append(gobj)
 
-        for gname, group in cycle_data.items():
-            gobj = GroupObject(gname)  # properties=None
-            all_objects.append(gobj)
+    #         for cname, df in group.items():
+    #             if df.empty:
+    #                 continue
 
-            for cname, df in group.items():
-                if df.empty:
-                    continue
+    #             # globale Dauer und Punkte zählen
+    #             tmin, tmax = df["time"].min(), df["time"].max()
+    #             if min_time is None or tmin < min_time:
+    #                 min_time = tmin
+    #             if max_time is None or tmax > max_time:
+    #                 max_time = tmax
+    #             total_points += len(df)
 
-                # globale Dauer und Punkte zählen
-                tmin, tmax = df["time"].min(), df["time"].max()
-                if min_time is None or tmin < min_time:
-                    min_time = tmin
-                if max_time is None or tmax > max_time:
-                    max_time = tmax
-                total_points += len(df)
+    #             values = df["value"].values
+    #             ts = df["time"].astype("datetime64[ns]").values
+    #             ch_val = ChannelObject(gname, f"{cname}.Current Value", values)
+    #             ch_ts  = ChannelObject(gname, f"{cname}.Timestamp", ts)
+    #             all_objects.extend([ch_val, ch_ts])
 
-                values = df["value"].values
-                ts = df["time"].astype("datetime64[ns]").values
-                ch_val = ChannelObject(gname, f"{cname}.Current Value", values)
-                ch_ts  = ChannelObject(gname, f"{cname}.Timestamp", ts)
-                all_objects.extend([ch_val, ch_ts])
-
-        writer.write_segment(all_objects)
-
-    if min_time is not None and max_time is not None:
-        dur = (max_time - min_time).total_seconds()
-        print(f"   [DEBUG] Gespeichert: Dauer≈{dur:.1f}s, Punkte={total_points}")
+    #     writer.write_segment(all_objects)
 
     print(f"✔ Datei gespeichert: {path}")
