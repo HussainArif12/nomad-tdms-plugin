@@ -37,7 +37,7 @@ class NewSchemaPackage(Schema):
         super().normalize(archive, logger)
 
         logger.info("NewSchema.normalize", parameter=configuration.parameter)
-        self.message = f"Hello {self.name}!"
+        self.message = f"Hello!"
 
 
 m_package.__init_metainfo__()
