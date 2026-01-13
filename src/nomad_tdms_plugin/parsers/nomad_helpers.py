@@ -78,8 +78,9 @@ def create_archive(
         return None
     if file_exists:
         with context.raw_file(filename, "r") as file:
-            existing_dict = yaml.safe_load(file)
-            dicts_are_equal = dict_nan_equal(existing_dict, entry_dict)
+            # existing_dict = yaml.safe_load(file)
+            # dicts_are_equal = dict_nan_equal(existing_dict, entry_dict)
+            pass
     if not file_exists or overwrite or dicts_are_equal:
         with context.raw_file(filename, "w") as newfile:
             if file_type == "json":
@@ -124,7 +125,9 @@ def create_archive(
                             all_objects.extend([ch_val, ch_ts])
 
                     tdms_writer.write_segment(all_objects)
+
         context.upload.process_updated_raw_file(filename, allow_modify=True)
+
     elif file_exists and not overwrite and not dicts_are_equal:
         logger.error(
             f"{filename} archive file already exists. "
