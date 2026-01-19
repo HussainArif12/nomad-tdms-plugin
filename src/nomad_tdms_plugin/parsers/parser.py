@@ -43,7 +43,7 @@ class NewParser(MatchingParser):
         logger: "BoundLogger",
         child_archives: dict[str, "EntryArchive"] = None,
     ) -> None:
-        logger.info("NewParser.parse", parameter=configuration.parameter)
+        logger.info("NewParser.parse", parameter="File running executed!")
 
         print(mainfile)
 
