@@ -34,6 +34,8 @@ configuration = config.get_plugin_entry_point(
     "nomad_tdms_plugin.parsers:parser_entry_point"
 )
 
+_parse_call_count = {}
+
 
 class NewParser(MatchingParser):
     def parse(
@@ -43,8 +45,9 @@ class NewParser(MatchingParser):
         logger: "BoundLogger",
         child_archives: dict[str, "EntryArchive"] = None,
     ) -> None:
-        logger.info("NewParser.parse", parameter="File running executed!")
+        logger.info("NewParser.parse", parameter="File running")
 
+        print(f"🔍 PARSE CALL #{call_num} - File: {mainfile}, Upload: {upload_id}")
         print(mainfile)
 
         # upload_id = archive.m_context.upload_id
@@ -59,7 +62,17 @@ class NewParser(MatchingParser):
             create=True,
         )
 
-        print("here")
+        upload_id = archive.m_context.upload_id if archive.m_context else "unknown"
+        key = f"{upload_id}:{mainfile}"
+        _parse_call_count[key] = _parse_call_count.get(key, 0) + 1
+        call_num = _parse_call_count[key]
+
+        logger.info(
+            "NewParser.parse",
+            call_number=call_num,
+            mainfile=mainfile,
+            upload_id=upload_id,
+        )
         tdms_file_paths = load_tdms_file(mainfile)
         logger.info("NewSchema.parse", parameter=f"{load_tdms_file(mainfile)}")
 
@@ -117,6 +130,8 @@ class NewParser(MatchingParser):
             )
 
             elapsed = time.perf_counter() - t_start
-            print(f"   ✔ Zyklus {i} fertig | bisher {elapsed:.1f}s")
+            logger.info(
+                "NewParser.parse", f"   ✔ Zyklus {i} fertig | bisher {elapsed:.1f}s"
+            )
 
         archive.workflow2 = Workflow(name="test")
