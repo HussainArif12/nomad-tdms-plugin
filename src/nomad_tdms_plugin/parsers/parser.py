@@ -86,7 +86,9 @@ class NewParser(MatchingParser):
         t_start = time.perf_counter()
 
         for i, (c, unvollst) in enumerate(cycles, start=1):
-            print(f"\n▶ Zyklus {i}/{len(cycles)} – Start")
+            logger.info(
+                "NewParser.parse", parameter=f"\n▶ Zyklus {i}/{len(cycles)} – Start"
+            )
 
             # Mapping bestimmen
             indices = set(c["index"].values)

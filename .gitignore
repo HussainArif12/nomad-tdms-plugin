@@ -131,4 +131,4 @@ dmypy.json
 
 
 *.tdms
-tests/example_uploads/PROCESS_DATA_STORAGE_2026-01-07_05-38-07.tdms
+tests/example_uploads/*.tdms
