@@ -137,10 +137,10 @@ def convert_to_hdf(
     logger,
     overwrite=False,
 ):
-    file_exists = context.raw_path_exists(filename)
     filename = os.path.basename(file_path).split("/")[-1]
-
     filename = filename.rsplit(".", 1)[0] + ".hdf"
+    file_exists = context.raw_path_exists(filename)
+
     full_data = []
     if not file_exists or overwrite:
         with archive.m_context.raw_file(filename, "wb") as file:
