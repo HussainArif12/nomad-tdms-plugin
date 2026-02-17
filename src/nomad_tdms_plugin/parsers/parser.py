@@ -54,7 +54,11 @@ class NewParser(MatchingParser):
         archive.metadata.upload_id = archive.m_context.upload_id  # upload_id
         archive.metadata.entry_id = "tdms_dataset"
         archive.data = NewSchemaPackage()
-        upload_id = archive.m_context.upload_id if archive.m_context else "tdms_upload"
+        upload_id = (
+            archive.m_context.upload_id
+            if archive.m_context.upload_id
+            else "tdms_upload"
+        )
         StagingUploadFiles(
             upload_id=upload_id,
             create=True,
@@ -63,7 +67,7 @@ class NewParser(MatchingParser):
         upload_id = archive.m_context.upload_id if archive.m_context else "unknown"
 
         tdms_file_paths = load_tdms_file(mainfile)
-        convert_to_hdf(archive.m_context, archive, tdms_file_paths, logger)
+
         logger.info("NewSchema.parse", parameter=f"{load_tdms_file(mainfile)}")
 
         file_ranges = {f: get_file_timerange(f) for f in tdms_file_paths}
@@ -123,7 +127,12 @@ class NewParser(MatchingParser):
 
             elapsed = time.perf_counter() - t_start
             logger.info(
-                "NewParser.parse", f"   ✔ Zyklus {i} fertig | bisher {elapsed:.1f}s"
+                "NewParser.parse",
+                parameter=f"   ✔ Zyklus {i} fertig | bisher {elapsed:.1f}s",
             )
+
+        convert_to_hdf(
+            archive.m_context, archive, tdms_file_paths, logger, overwrite=True
+        )
 
         archive.workflow2 = Workflow(name="test")

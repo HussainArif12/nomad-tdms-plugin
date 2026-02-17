@@ -79,6 +79,7 @@ def create_archive(
 
     dicts_are_equal = None
     if isinstance(context, ClientContext):
+        print("Context for create archive is ClientContext")
         return None
 
     if not file_exists or overwrite or dicts_are_equal:
@@ -137,14 +138,16 @@ def convert_to_hdf(
     logger,
     overwrite=False,
 ):
-    filename = os.path.basename(file_path).split("/")[-1]
+
+    print("here")
+    filename = os.path.basename(file_path[-1]).split("/")[-1]
     filename = filename.rsplit(".", 1)[0] + ".hdf"
     file_exists = context.raw_path_exists(filename)
 
     full_data = []
     if not file_exists or overwrite:
         with archive.m_context.raw_file(filename, "wb") as file:
-            tdms_file = TdmsFile.read(file_path)
+            tdms_file = TdmsFile.read(file_path[-1])
             for group in tdms_file.groups():
                 group_name = group.name
 
@@ -162,12 +165,11 @@ def convert_to_hdf(
                     full_data.append(dataset)
         if len(full_data):
             df = pd.concat(full_data, axis=1)
-            print(df)
             df.dropna(inplace=True)
             print("length of dataframe from df -> tdms:", len(df))
-            df.to_hdf(str(tdmsfile_path) + ".hdf", key="df")
+            df.to_hdf(filename, key="df")
 
-        context.upload.process_updated_raw_file(filename, allow_modify=True)
+        # archive.m_context.upload.process_updated_raw_file(filename, allow_modify=True)
     elif file_exists and not overwrite:
         logger.error(
             f"{filename} archive file already exists. "
