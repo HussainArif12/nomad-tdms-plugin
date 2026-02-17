@@ -147,7 +147,7 @@ def convert_to_hdf(
     full_data = []
     if not file_exists or overwrite:
         with archive.m_context.raw_file(filename, "wb") as file:
-            tdms_file = TdmsFile.read(file_path[-1])
+            tdms_file = TdmsFile.read(file.name)
             for group in tdms_file.groups():
                 group_name = group.name
 
