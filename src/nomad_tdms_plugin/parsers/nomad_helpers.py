@@ -5,6 +5,7 @@ import math
 from nptdms import TdmsFile, TdmsWriter, ChannelObject, RootObject, GroupObject
 import pandas as pd
 import os
+import h5py
 
 
 def nan_equal(a, b):
@@ -146,28 +147,39 @@ def convert_to_hdf(
 
     full_data = []
     if not file_exists or overwrite:
-        with archive.m_context.raw_file(filename, "wb") as file:
-            tdms_file = TdmsFile.read(file_path[-1])
-            for group in tdms_file.groups():
-                group_name = group.name
+        tdms_file = TdmsFile.read(file_path[-1])
+        for group in tdms_file.groups():
+            group_name = group.name
 
-                for channel in group.channels():
-                    channel_name = channel.name
-                    # Access dictionary of properties:
-                    properties = channel.properties
-                    # Access numpy array of data for channel:
-                    data = channel[:]
-                    # Access a subset of data
-                    # data_subset = channel[100:200]
-                    dataset = pd.DataFrame(
-                        columns=[f"{group_name}/{channel_name}"], data=data
-                    )
-                    full_data.append(dataset)
-        if len(full_data):
-            df = pd.concat(full_data, axis=1)
-            df.dropna(inplace=True)
-            print("length of dataframe from df -> tdms:", len(df))
-            df.to_hdf(filename, key="df")
+            for channel in group.channels():
+                channel_name = channel.name
+                # Access dictionary of properties:
+                properties = channel.properties
+                # Access numpy array of data for channel:
+                data = channel[:]
+                # Access a subset of data
+                # data_subset = channel[100:200]
+                dataset = pd.DataFrame(
+                    columns=[f"{group_name}/{channel_name}"], data=data
+                )
+                full_data.append(dataset)
+
+        with archive.m_context.raw_file(filename, "wb") as file:
+            if len(full_data):
+                num_array_length = len(full_data)
+                df = pd.concat(full_data, axis=1)
+                df.dropna(inplace=True)
+                print("length of dataframe from df -> tdms:", len(df))
+                with h5py.File(file.name) as hdf:
+                    for column in df.columns:
+
+                        values = df[column]
+                        group = hdf.create_group(column)
+                        group.create_dataset("value", data=values)
+                        group.create_dataset("time", data=num_array_length)
+                        group.attrs["axes"] = "time"
+                        group.attrs["signal"] = "value"
+                        group.attrs["NX_class"] = "NXdata"
 
         # archive.m_context.upload.process_updated_raw_file(filename, allow_modify=True)
     elif file_exists and not overwrite:
