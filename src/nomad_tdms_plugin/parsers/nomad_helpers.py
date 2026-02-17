@@ -3,6 +3,8 @@ import yaml
 from nomad.datamodel.context import ClientContext
 import math
 from nptdms import TdmsFile, TdmsWriter, ChannelObject, RootObject, GroupObject
+import pandas as pd
+import os
 
 
 def nan_equal(a, b):
@@ -120,6 +122,53 @@ def create_archive(
         context.upload.process_updated_raw_file(filename, allow_modify=True)
 
     elif file_exists and not overwrite and not dicts_are_equal:
+        logger.error(
+            f"{filename} archive file already exists. "
+            f"You are trying to overwrite it with a different content. "
+            f"To do so, remove the existing archive and click reprocess again."
+        )
+    return get_hash_ref(context.upload_id, filename)
+
+
+def convert_to_hdf(
+    context,
+    archive,
+    file_path,
+    logger,
+    overwrite=False,
+):
+    file_exists = context.raw_path_exists(filename)
+    filename = os.path.basename(file_path).split("/")[-1]
+
+    filename = filename.rsplit(".", 1)[0] + ".hdf"
+    full_data = []
+    if not file_exists or overwrite:
+        with archive.m_context.raw_file(filename, "wb") as file:
+            tdms_file = TdmsFile.read(file_path)
+            for group in tdms_file.groups():
+                group_name = group.name
+
+                for channel in group.channels():
+                    channel_name = channel.name
+                    # Access dictionary of properties:
+                    properties = channel.properties
+                    # Access numpy array of data for channel:
+                    data = channel[:]
+                    # Access a subset of data
+                    # data_subset = channel[100:200]
+                    dataset = pd.DataFrame(
+                        columns=[f"{group_name}/{channel_name}"], data=data
+                    )
+                    full_data.append(dataset)
+        if len(full_data):
+            df = pd.concat(full_data, axis=1)
+            print(df)
+            df.dropna(inplace=True)
+            print("length of dataframe from df -> tdms:", len(df))
+            df.to_hdf(str(tdmsfile_path) + ".hdf", key="df")
+
+        context.upload.process_updated_raw_file(filename, allow_modify=True)
+    elif file_exists and not overwrite:
         logger.error(
             f"{filename} archive file already exists. "
             f"You are trying to overwrite it with a different content. "

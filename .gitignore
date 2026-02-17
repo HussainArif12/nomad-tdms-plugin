@@ -132,3 +132,5 @@ dmypy.json
 
 *.tdms
 tests/example_uploads/*.tdms
+*.hdf
+*.pkl

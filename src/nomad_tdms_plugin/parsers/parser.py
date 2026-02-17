@@ -29,6 +29,7 @@ from .parse_tdms_helpers import (
     timed,
     filter_cycle,
 )
+from .nomad_helpers import convert_to_hdf
 
 configuration = config.get_plugin_entry_point(
     "nomad_tdms_plugin.parsers:parser_entry_point"
@@ -62,6 +63,7 @@ class NewParser(MatchingParser):
         upload_id = archive.m_context.upload_id if archive.m_context else "unknown"
 
         tdms_file_paths = load_tdms_file(mainfile)
+        convert_to_hdf(archive.m_context, archive, tdms_file_paths, logger)
         logger.info("NewSchema.parse", parameter=f"{load_tdms_file(mainfile)}")
 
         file_ranges = {f: get_file_timerange(f) for f in tdms_file_paths}
