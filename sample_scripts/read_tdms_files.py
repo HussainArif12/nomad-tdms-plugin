@@ -71,13 +71,13 @@ if __name__ == "__main__":
     hd_file = "/home/student/projects/nomad-tdms-plugin/tests/example_uploads/PROCESS_DATA_STORAGE_2025-09-03_14-01-21.tdms.hdf"
     df = pd.read_hdf(hd_file, key="df")
 
-    print("Now writing.. ")
-    with TdmsWriter("./tdms_file.tdms") as tdms_writer:
-        for column_name in df.columns:
-            group_name, channel_name = column_name.split("/")
-            data = df[column_name].values
-            channel = ChannelObject(group_name, channel_name, data)
-            tdms_writer.write_segment([channel])
+    # print("Now writing.. ")
+    # with TdmsWriter("./tdms_file.tdms") as tdms_writer:
+    #     for column_name in df.columns:
+    #         group_name, channel_name = column_name.split("/")
+    #         data = df[column_name].values
+    #         channel = ChannelObject(group_name, channel_name, data)
+    #         tdms_writer.write_segment([channel])
     # for file in tdmsfile_path.glob("*.hdf"):
     #     print("read ", file)
     #     # f = h5py.File(file, 'r')
