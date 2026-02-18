@@ -223,3 +223,7 @@ def convert_another_hdf(archive, mainfile):
                     group.create_dataset("time", data=num_array_length)
                 except Exception:
                     print(values)
+
+                group.attrs["axes"] = "time"
+                group.attrs["signal"] = "value"
+                group.attrs["NX_class"] = "NXdata"
