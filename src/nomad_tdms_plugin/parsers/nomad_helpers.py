@@ -131,65 +131,6 @@ def create_archive(
     return get_hash_ref(context.upload_id, filename)
 
 
-def convert_to_hdf(
-    context,
-    archive,
-    file_path,
-    logger,
-    overwrite=False,
-):
-
-    print("here")
-    filename = os.path.basename(file_path[-1]).split("/")[-1]
-    filename = filename.rsplit(".", 1)[0] + ".hdf"
-    filename = "output_file.hdf"
-    file_exists = context.raw_path_exists(filename)
-
-    full_data = []
-    if not file_exists or overwrite:
-        tdms_file = TdmsFile.read(file_path)
-        for group in tdms_file.groups():
-            group_name = group.name
-
-            for channel in group.channels():
-                channel_name = channel.name
-                # Access dictionary of properties:
-                properties = channel.properties
-                # Access numpy array of data for channel:
-                data = channel[:]
-                # Access a subset of data
-                # data_subset = channel[100:200]
-                dataset = pd.DataFrame(
-                    columns=[f"{group_name}/{channel_name}"], data=data
-                )
-                full_data.append(dataset)
-
-        with archive.m_context.raw_file(filename, "wb") as file:
-            if full_data:
-                num_array_length = len(full_data)
-                df = pd.concat(full_data, axis=1)
-                df.dropna(inplace=True)
-                print("length of dataframe from df -> tdms:", len(df))
-                with h5py.File(file.name) as hdf:
-                    for column in df.columns:
-                        values = df[column]
-                        group = hdf.create_group(column)
-                        group.create_dataset("value", data=values)
-                        group.create_dataset("time", data=num_array_length)
-                        group.attrs["axes"] = "time"
-                        group.attrs["signal"] = "value"
-                        group.attrs["NX_class"] = "NXdata"
-
-        # archive.m_context.upload.process_updated_raw_file(filename, allow_modify=True)
-    elif file_exists and not overwrite:
-        logger.error(
-            f"{filename} archive file already exists. "
-            f"You are trying to overwrite it with a different content. "
-            f"To do so, remove the existing archive and click reprocess again."
-        )
-    return get_hash_ref(context.upload_id, filename)
-
-
 def convert_another_hdf(archive, mainfile):
     filename = os.path.basename(mainfile[0]).split("/")[-1]
     filename = filename.rsplit(".", 1)[0] + ".hdf"
@@ -216,7 +157,8 @@ def convert_another_hdf(archive, mainfile):
                     values = values.dt.strftime("%Y-%m-%dT%H:%M:%S.%f").values.astype(
                         "S"
                     )
-                    print(values)
+                    # Option B: Save as Unix epoch (best for math/plotting later)
+                    # values = values.astype(np.int64) // 10**9
                 group = hdf.create_group(column)
                 try:
                     group.create_dataset("value", data=values)
