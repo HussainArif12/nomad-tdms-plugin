@@ -1,4 +1,3 @@
-import os
 import time
 from typing import (
     TYPE_CHECKING,
@@ -16,20 +15,20 @@ if TYPE_CHECKING:
 
 from nomad.config import config
 from nomad.datamodel.metainfo.workflow import Workflow
-from nomad.parsing.parser import MatchingParser
-from nptdms import TdmsFile
 from nomad.files import StagingUploadFiles
+from nomad.parsing.parser import MatchingParser
+
+from .nomad_helpers import convert_another_hdf
 from .parse_tdms_helpers import (
     INDEX_MAPPING,
     detect_cycles,
     extract_index_series_all,
+    filter_cycle,
     get_file_timerange,
     load_tdms_file,
     save_cycle,
     timed,
-    filter_cycle,
 )
-from .nomad_helpers import convert_to_hdf
 
 configuration = config.get_plugin_entry_point(
     "nomad_tdms_plugin.parsers:parser_entry_point"
@@ -67,6 +66,8 @@ class NewParser(MatchingParser):
         upload_id = archive.m_context.upload_id if archive.m_context else "unknown"
 
         tdms_file_paths = load_tdms_file(mainfile)
+        print(tdms_file_paths)
+        convert_another_hdf(archive, tdms_file_paths)
 
         logger.info("NewSchema.parse", parameter=f"{load_tdms_file(mainfile)}")
 
@@ -90,7 +91,7 @@ class NewParser(MatchingParser):
             if not marker:
                 logger.info(
                     "NewSchema.parse",
-                    parameter=f" ⚠ Kein Mapping (TYP/TEMP/Zustand) gefunden, Zyklus übersprungen",
+                    parameter=" ⚠ Kein Mapping (TYP/TEMP/Zustand) gefunden, Zyklus übersprungen",
                 )
                 print(
                     "   ⚠ Kein Mapping (TYP/TEMP/Zustand) gefunden, Zyklus übersprungen"
@@ -130,9 +131,5 @@ class NewParser(MatchingParser):
                 "NewParser.parse",
                 parameter=f"   ✔ Zyklus {i} fertig | bisher {elapsed:.1f}s",
             )
-
-        convert_to_hdf(
-            archive.m_context, archive, tdms_file_paths, logger, overwrite=True
-        )
 
         archive.workflow2 = Workflow(name="test")

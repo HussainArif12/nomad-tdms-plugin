@@ -1,11 +1,10 @@
-import json
-import yaml
-from nomad.datamodel.context import ClientContext
 import math
-from nptdms import TdmsFile, TdmsWriter, ChannelObject, RootObject, GroupObject
-import pandas as pd
 import os
+
 import h5py
+import pandas as pd
+from nomad.datamodel.context import ClientContext
+from nptdms import ChannelObject, GroupObject, RootObject, TdmsFile, TdmsWriter
 
 
 def nan_equal(a, b):
@@ -143,11 +142,12 @@ def convert_to_hdf(
     print("here")
     filename = os.path.basename(file_path[-1]).split("/")[-1]
     filename = filename.rsplit(".", 1)[0] + ".hdf"
+    filename = "output_file.hdf"
     file_exists = context.raw_path_exists(filename)
 
     full_data = []
     if not file_exists or overwrite:
-        tdms_file = TdmsFile.read(file_path[-1])
+        tdms_file = TdmsFile.read(file_path)
         for group in tdms_file.groups():
             group_name = group.name
 
@@ -165,14 +165,13 @@ def convert_to_hdf(
                 full_data.append(dataset)
 
         with archive.m_context.raw_file(filename, "wb") as file:
-            if len(full_data):
+            if full_data:
                 num_array_length = len(full_data)
                 df = pd.concat(full_data, axis=1)
                 df.dropna(inplace=True)
                 print("length of dataframe from df -> tdms:", len(df))
                 with h5py.File(file.name) as hdf:
                     for column in df.columns:
-
                         values = df[column]
                         group = hdf.create_group(column)
                         group.create_dataset("value", data=values)
@@ -189,3 +188,38 @@ def convert_to_hdf(
             f"To do so, remove the existing archive and click reprocess again."
         )
     return get_hash_ref(context.upload_id, filename)
+
+
+def convert_another_hdf(archive, mainfile):
+    filename = os.path.basename(mainfile[0]).split("/")[-1]
+    filename = filename.rsplit(".", 1)[0] + ".hdf"
+    full_data = []
+    tdms_file = TdmsFile.read(mainfile[0])
+    for group in tdms_file.groups():
+        group_name = group.name
+        for channel in group.channels():
+            channel_name = channel.name
+            data = channel[:]
+            dataset = pd.DataFrame(columns=[f"{group_name}/{channel_name}"], data=data)
+            full_data.append(dataset)
+
+    df = pd.concat(full_data, axis=1)
+    print(df)
+    num_array_length = len(df)
+    df.dropna(inplace=True)
+    with archive.m_context.raw_file(filename, "w") as newfile:
+        with h5py.File(newfile.name, "w") as hdf:
+            for column in df.columns:
+                values = df[column]
+                if pd.api.types.is_datetime64_any_dtype(values):
+                    # Option A: Save as strings (best for readability)
+                    values = values.dt.strftime("%Y-%m-%dT%H:%M:%S.%f").values.astype(
+                        "S"
+                    )
+                    print(values)
+                group = hdf.create_group(column)
+                try:
+                    group.create_dataset("value", data=values)
+                    group.create_dataset("time", data=num_array_length)
+                except Exception:
+                    print(values)
