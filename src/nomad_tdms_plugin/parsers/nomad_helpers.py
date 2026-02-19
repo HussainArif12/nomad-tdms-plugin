@@ -145,7 +145,6 @@ def convert_another_hdf(archive, mainfile):
             full_data.append(dataset)
 
     df = pd.concat(full_data, axis=1)
-    print(df)
     num_array_length = len(df)
     df.dropna(inplace=True)
     with archive.m_context.raw_file(filename, "w") as newfile:
