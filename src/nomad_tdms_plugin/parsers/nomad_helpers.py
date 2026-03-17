@@ -121,7 +121,7 @@ def create_archive(
                 tdms_writer.write_segment(all_objects)
 
         context.upload.process_updated_raw_file(filename, allow_modify=True)
-        convert_another_hdf(archive, mainfile=[filename])
+        # convert_another_hdf(archive, mainfile=[filename])
     elif file_exists and not overwrite and not dicts_are_equal:
         logger.error(
             f"{filename} archive file already exists. "

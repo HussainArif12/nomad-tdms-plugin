@@ -19,6 +19,8 @@ from nomad.files import StagingUploadFiles
 from nomad.parsing.parser import MatchingParser
 
 from .nomad_helpers import convert_another_hdf
+import os
+import glob
 from .parse_tdms_helpers import (
     INDEX_MAPPING,
     detect_cycles,
@@ -132,4 +134,7 @@ class NewParser(MatchingParser):
                 parameter=f"   ✔ Zyklus {i} fertig | bisher {elapsed:.1f}s",
             )
 
+        parent_dir = os.path.dirname(mainfile)
+        all_files = glob.glob(os.path.join(parent_dir, "*"))
+        logger.info("Files in parent directory", parameter=all_files)
         archive.workflow2 = Workflow(name="test")
