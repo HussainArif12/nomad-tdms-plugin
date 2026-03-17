@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from nptdms import TdmsFile, TdmsWriter, ChannelObject, RootObject, GroupObject
 import time
-from .nomad_helpers import create_archive
+from .nomad_helpers import convert_another_hdf, create_archive
 
 OUTPUT_FOLDER = r"./outputs"
 PRUEFLINGSNAME = "636"  # manuell setzen
@@ -324,6 +324,7 @@ def save_cycle(
         filename += "_unvollständig"
     filename += ".tdms"
     path = os.path.join(OUTPUT_FOLDER, filename)
+    print(path)
     create_archive(
         zyklus_nr,
         typ,
@@ -339,6 +340,7 @@ def save_cycle(
         logger=print,
         overwrite=True,
     )
+
     # with TdmsWriter(path) as writer:
     #     root = RootObject(properties={
     #         "Zyklus": int(zyklus_nr),
