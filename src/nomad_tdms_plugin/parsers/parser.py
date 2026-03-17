@@ -69,7 +69,7 @@ class NewParser(MatchingParser):
 
         tdms_file_paths = load_tdms_file(mainfile)
         print(tdms_file_paths)
-        convert_another_hdf(archive, tdms_file_paths)
+        # convert_another_hdf(archive, tdms_file_paths)
 
         logger.info("NewSchema.parse", parameter=f"{load_tdms_file(mainfile)}")
 
