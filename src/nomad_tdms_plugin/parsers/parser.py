@@ -135,6 +135,11 @@ class NewParser(MatchingParser):
             )
 
         parent_dir = os.path.dirname(mainfile)
-        all_files = glob.glob(os.path.join(parent_dir, "*"))
+        all_files = [
+            f for f in glob.glob(os.path.join(parent_dir, "*")) if f.endswith(".tdms")
+        ]
+        for file in all_files:
+            convert_another_hdf(archive, [file])
+
         logger.info("Files in parent directory", parameter=all_files)
         archive.workflow2 = Workflow(name="test")
