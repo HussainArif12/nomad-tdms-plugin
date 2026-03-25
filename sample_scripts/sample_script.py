@@ -16,13 +16,13 @@ BASENAME = f"NVM5evo-{PRUEFLINGSNAME}-11"
 EXCEPTION_INDICES = set([501, 502, 503] + list(range(700, 718)) + [800, 900])
 
 INDEX_MAPPING = {
-    620: ("B", "-30°C", "Referenzmessung"),
-    623: ("B", "-30°C", "Froststart"),
-    622: ("B", "-20°C", "Froststart"),
-    602: ("D", "-30°C", "Referenzmessung"),
-    603: ("D", "-30°C", "Froststart"),
-    680: ("H", "-30°C", "Referenzmessung"),
-    683: ("H", "-30°C", "Froststart"),
+    620: ("B", "-30C", "Referenzmessung"),
+    623: ("B", "-30C", "Froststart"),
+    622: ("B", "-20C", "Froststart"),
+    602: ("D", "-30C", "Referenzmessung"),
+    603: ("D", "-30C", "Froststart"),
+    680: ("H", "-30C", "Referenzmessung"),
+    683: ("H", "-30C", "Froststart"),
 }
 
 REQUIRED_INDICES = {
@@ -319,7 +319,7 @@ def save_cycle(
     datum_str = cycle_df["time"].min().strftime("%Y-%m-%d")
     filename = f"{BASENAME}-{typ}_{temp}_{zustand}_{datum_str}_Zyklus{zyklus_nr}"
     if unvollstaendig:
-        filename += "_unvollständig"
+        filename += "_unvollstaendig"
     filename += ".tdms"
     path = os.path.join(OUTPUT_FOLDER, filename)
 
