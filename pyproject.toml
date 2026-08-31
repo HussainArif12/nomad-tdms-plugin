@@ -31,7 +31,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/HussainArif12/nomad_tdms_plugin"
+Repository = "https://github.com/ZBT-Tools/nomad-tdms-plugin"
 
 [project.optional-dependencies]
 dev = [

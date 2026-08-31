@@ -8,7 +8,7 @@ This `nomad` plugin was generated with `Cookiecutter` along with `@nomad`'s [`co
 
 If you want to develop locally this plugin, clone the project and in the plugin folder, create a virtual environment (you can use Python 3.10, 3.11 or 3.12):
 ```sh
-git clone https://github.com/HussainArif12/nomad_tdms_plugin.git
+git clone https://github.com/ZBT-Tools/nomad_tdms_plugin.git
 cd nomad_tdms_plugin'
 python3.11 -m venv .pyenv
 . .pyenv/bin/activate

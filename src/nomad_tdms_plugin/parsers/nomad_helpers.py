@@ -148,8 +148,31 @@ def convert_another_hdf(archive, mainfile):
     df = pd.concat(full_data, axis=1)
     num_array_length = len(df)
     df.dropna(inplace=True)
-    with archive.m_context.raw_file(filename, "w") as newfile:
-        with h5py.File(newfile.name, "w") as hdf:
+    if archive.m_context:  # archive.m_context does not exist when running tests.
+        with archive.m_context.raw_file(filename, "w") as newfile:
+            with h5py.File(newfile.name, "w") as hdf:
+                for column in df.columns:
+                    values = df[column]
+                    if pd.api.types.is_datetime64_any_dtype(values):
+                        # Option A: Save as strings (best for readability)
+                        values = values.dt.strftime(
+                            "%Y-%m-%dT%H:%M:%S.%f"
+                        ).values.astype("S")
+                        # Option B: Save as Unix epoch (best for math/plotting later)
+                        # values = values.astype(np.int64) // 10**9
+                    group = hdf.create_group(column)
+                    try:
+                        group.create_dataset("value", data=values)
+                        group.create_dataset("time", data=num_array_length)
+                    except Exception:
+                        print(values)
+
+                    group.attrs["axes"] = "time"
+                    group.attrs["signal"] = "value"
+                    group.attrs["NX_class"] = "NXdata"
+
+    else:
+        with h5py.File(filename, "w") as hdf:
             for column in df.columns:
                 values = df[column]
                 if pd.api.types.is_datetime64_any_dtype(values):

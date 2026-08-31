@@ -52,12 +52,17 @@ class NewParser(MatchingParser):
         # upload_id = archive.m_context.upload_id
         # upload_id_first_chars = upload_id[:2]
 
-        archive.metadata.upload_id = archive.m_context.upload_id  # upload_id
-        archive.metadata.entry_id = "tdms_dataset"
+        if archive.metadata:
+            archive.metadata.upload_id = (
+                archive.m_context.upload_id if archive.m_context else "Unknown"
+            )  # upload_id
+
+            archive.metadata.entry_id = "tdms_dataset"
+
         archive.data = NewSchemaPackage()
         upload_id = (
             archive.m_context.upload_id
-            if archive.m_context.upload_id
+            if archive.m_context and archive.m_context.upload_id
             else "tdms_upload"
         )
         StagingUploadFiles(

@@ -2,7 +2,7 @@ site_name: nomad_tdms_plugin
 site_description: Run TDMS files
 site_author: Hussain Arif
 
-repo_url: https://github.com/HussainArif12/nomad_tdms_plugin
+repo_url: https://github.com/ZBT-Tools/nomad-tdms-plugin
 edit_uri: ""
 
 nav:
