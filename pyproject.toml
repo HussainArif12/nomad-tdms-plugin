@@ -44,6 +44,8 @@ dev = [
     "mkdocs-click",
     "pytest-asyncio",
     "npTDMS",
+    "zipstream",
+    "fastapi"
 ]
 
 [tool.uv]
