@@ -14,6 +14,7 @@ classifiers = [
 ]
 name = "nomad_tdms_plugin"
 description = "Run TDMS files"
+version = "0.0.1"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
